@@ -1,0 +1,81 @@
+<%- include('header') %>
+
+<h1>Request Details</h1>
+
+<% if (error) { %>
+  <div class="alert alert-error"><%= error %></div>
+<% } %>
+<% if (success) { %>
+  <div class="alert alert-success"><%= success %></div>
+<% } %>
+
+<div class="card" style="margin-top: 1rem;">
+  <table style="box-shadow: none;">
+    <tr>
+      <th style="width: 200px;">Requester</th>
+      <td><%= certReq.requesterUsername %></td>
+    </tr>
+    <tr>
+      <th>Common Name</th>
+      <td><%= certReq.commonName %></td>
+    </tr>
+    <tr>
+      <th>Organization</th>
+      <td><%= certReq.organization %></td>
+    </tr>
+    <tr>
+      <th>Organizational Unit</th>
+      <td><%= certReq.organizationalUnit || 'N/A' %></td>
+    </tr>
+    <tr>
+      <th>Country</th>
+      <td><%= certReq.country %></td>
+    </tr>
+    <tr>
+      <th>Email</th>
+      <td><%= certReq.email %></td>
+    </tr>
+    <tr>
+      <th>Status</th>
+      <td><span class="status status-<%= certReq.status.toLowerCase() %>"><%= certReq.status %></span></td>
+    </tr>
+    <tr>
+      <th>Requested At</th>
+      <td><%= certReq.createdAt.toLocaleString() %></td>
+    </tr>
+    <% if (certReq.workflowId) { %>
+      <tr>
+        <th>OpenXPKI Workflow ID</th>
+        <td><%= certReq.workflowId %></td>
+      </tr>
+    <% } %>
+  </table>
+
+  <% if (certReq.status === 'PENDING') { %>
+    <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem;">
+      <form action="/approve/<%= certReq._id %>" method="POST">
+        <button type="submit" class="btn btn-success">Approve</button>
+      </form>
+      <form action="/reject/<%= certReq._id %>" method="POST" onsubmit="return handleReject(this);">
+        <input type="hidden" name="reason" value="">
+        <button type="submit" class="btn btn-danger">Reject</button>
+      </form>
+      <a href="/pending" class="btn">Back to List</a>
+    </div>
+  <% } else { %>
+    <div style="margin-top: 1.5rem;">
+      <a href="/pending" class="btn">Back to List</a>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  function handleReject(form) {
+    var reason = prompt('Enter rejection reason (optional):');
+    if (reason === null) return false;
+    form.querySelector('input[name="reason"]').value = reason;
+    return true;
+  }
+</script>
+
+<%- include('footer') %>

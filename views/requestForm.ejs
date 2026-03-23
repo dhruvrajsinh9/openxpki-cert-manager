@@ -1,0 +1,53 @@
+<%- include('header') %>
+
+<h1>Request a Certificate</h1>
+
+<% if (error) { %>
+  <div class="alert alert-error"><%= error %></div>
+<% } %>
+<% if (success) { %>
+  <div class="alert alert-success"><%= success %></div>
+<% } %>
+
+<div class="form-container">
+  <form action="/request" method="POST">
+    <div class="form-group">
+      <label for="commonName">Common Name (CN) *</label>
+      <input type="text" id="commonName" name="commonName" placeholder="e.g., test.example.com" required>
+    </div>
+
+    <div class="form-group">
+      <label for="organization">Organization (O) *</label>
+      <input type="text" id="organization" name="organization" placeholder="e.g., My Company Ltd" required>
+    </div>
+
+    <div class="form-group">
+      <label for="organizationalUnit">Organizational Unit (OU)</label>
+      <input type="text" id="organizationalUnit" name="organizationalUnit" placeholder="e.g., IT Department">
+    </div>
+
+    <div class="form-group">
+      <label for="country">Country (C) *</label>
+      <select id="country" name="country" required>
+        <option value="">Select country...</option>
+        <option value="DE">Germany (DE)</option>
+        <option value="US">United States (US)</option>
+        <option value="GB">United Kingdom (GB)</option>
+        <option value="FR">France (FR)</option>
+        <option value="IN">India (IN)</option>
+        <option value="AT">Austria (AT)</option>
+        <option value="CH">Switzerland (CH)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email *</label>
+      <input type="email" id="email" name="email" placeholder="e.g., admin@example.com" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Request</button>
+    <a href="/dashboard" class="btn" style="margin-left: 0.5rem;">Cancel</a>
+  </form>
+</div>
+
+<%- include('footer') %>

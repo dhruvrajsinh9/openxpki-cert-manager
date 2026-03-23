@@ -1,0 +1,59 @@
+<%- include('header') %>
+
+<h1>Pending Certificate Requests</h1>
+
+<% if (error) { %>
+  <div class="alert alert-error"><%= error %></div>
+<% } %>
+<% if (success) { %>
+  <div class="alert alert-success"><%= success %></div>
+<% } %>
+
+<% if (requests.length === 0) { %>
+  <p>No pending requests at this time.</p>
+<% } else { %>
+  <table>
+    <thead>
+      <tr>
+        <th>Requester</th>
+        <th>Common Name</th>
+        <th>Organization</th>
+        <th>Country</th>
+        <th>Requested</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% requests.forEach(req => { %>
+        <tr>
+          <td><%= req.requesterUsername %></td>
+          <td><%= req.commonName %></td>
+          <td><%= req.organization %></td>
+          <td><%= req.country %></td>
+          <td><%= req.createdAt.toLocaleDateString() %> <%= req.createdAt.toLocaleTimeString() %></td>
+          <td>
+            <a href="/pending/<%= req._id %>" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">View Details</a>
+            <form action="/approve/<%= req._id %>" method="POST" style="display:inline;">
+              <button type="submit" class="btn btn-success" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">Approve</button>
+            </form>
+            <form action="/reject/<%= req._id %>" method="POST" style="display:inline;" onsubmit="return handleReject(this);">
+              <input type="hidden" name="reason" value="">
+              <button type="submit" class="btn btn-danger" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">Reject</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+
+<script>
+  function handleReject(form) {
+    var reason = prompt('Enter rejection reason (optional):');
+    if (reason === null) return false;
+    form.querySelector('input[name="reason"]').value = reason;
+    return true;
+  }
+</script>
+
+<%- include('footer') %>

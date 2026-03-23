@@ -1,0 +1,64 @@
+<%- include('header') %>
+
+<h1>Certificate Details</h1>
+
+<div class="card" style="margin-top: 1rem;">
+  <table style="box-shadow: none;">
+    <tr>
+      <th style="width: 200px;">Common Name</th>
+      <td><%= certReq.commonName %></td>
+    </tr>
+    <tr>
+      <th>Organization</th>
+      <td><%= certReq.organization %></td>
+    </tr>
+    <tr>
+      <th>Organizational Unit</th>
+      <td><%= certReq.organizationalUnit || 'N/A' %></td>
+    </tr>
+    <tr>
+      <th>Country</th>
+      <td><%= certReq.country %></td>
+    </tr>
+    <tr>
+      <th>Email</th>
+      <td><%= certReq.email %></td>
+    </tr>
+    <tr>
+      <th>Status</th>
+      <td><span class="status status-<%= certReq.status.toLowerCase() %>"><%= certReq.status %></span></td>
+    </tr>
+    <tr>
+      <th>Requested At</th>
+      <td><%= certReq.createdAt.toLocaleString() %></td>
+    </tr>
+    <% if (certReq.approverUsername) { %>
+      <tr>
+        <th>Processed By</th>
+        <td><%= certReq.approverUsername %></td>
+      </tr>
+    <% } %>
+    <% if (certReq.rejectionReason) { %>
+      <tr>
+        <th>Rejection Reason</th>
+        <td style="color: #e53e3e;"><%= certReq.rejectionReason %></td>
+      </tr>
+    <% } %>
+    <% if (certReq.workflowId) { %>
+      <tr>
+        <th>OpenXPKI Workflow ID</th>
+        <td><%= certReq.workflowId %></td>
+      </tr>
+    <% } %>
+  </table>
+
+  <div style="margin-top: 1.5rem;">
+    <% if (certReq.status === 'ISSUED' && certReq.certificatePem) { %>
+      <a href="/certificates/<%= certReq._id %>/download" class="btn btn-success">Download Certificate (PEM)</a>
+      <a href="/certificates/<%= certReq._id %>/download-key" class="btn" style="background: #805ad5; color: white;">Download Private Key</a>
+    <% } %>
+    <a href="/certificates" class="btn" style="margin-left: 0.5rem;">Back to List</a>
+  </div>
+</div>
+
+<%- include('footer') %>

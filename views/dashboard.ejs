@@ -1,0 +1,31 @@
+<%- include('header') %>
+
+<h1>Dashboard</h1>
+<p>Welcome, <strong><%= user.username %></strong>!</p>
+
+<% if (user.role === 'requester') { %>
+  <div class="dashboard-cards">
+    <div class="card">
+      <h2>Request a Certificate</h2>
+      <p>Submit a new SSL certificate request.</p>
+      <a href="/request" class="btn btn-primary">New Request</a>
+    </div>
+    <div class="card">
+      <h2>My Certificates</h2>
+      <p>View your certificate requests and download issued certificates.</p>
+      <a href="/certificates" class="btn btn-primary">View Certificates</a>
+    </div>
+  </div>
+<% } %>
+
+<% if (user.role === 'approver') { %>
+  <div class="dashboard-cards">
+    <div class="card">
+      <h2>Pending Requests</h2>
+      <p>Review and approve or reject certificate requests.</p>
+      <a href="/pending" class="btn btn-primary">View Pending</a>
+    </div>
+  </div>
+<% } %>
+
+<%- include('footer') %>

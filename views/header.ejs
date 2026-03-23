@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate Manager</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">Certificate Manager</div>
+    <% if (user) { %>
+      <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+        <% if (user.role === 'requester') { %>
+          <a href="/request">Request Certificate</a>
+          <a href="/certificates">My Certificates</a>
+        <% } %>
+        <% if (user.role === 'approver') { %>
+          <a href="/pending">Pending Requests</a>
+        <% } %>
+        <span class="nav-user">Logged in as: <strong><%= user.username %></strong> (<%= user.role %>)</span>
+        <form action="/logout" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-logout">Logout</button>
+        </form>
+      </div>
+    <% } %>
+  </nav>
+  <main class="container">
