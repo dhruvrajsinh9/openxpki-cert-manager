@@ -1,4 +1,3 @@
-// routes/authRoutes.js
 // Handles login, logout, and dashboard routing
 
 const express = require('express');

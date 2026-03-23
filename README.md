@@ -19,12 +19,12 @@ A web application built with Express.js that integrates with OpenXPKI to enable 
 - **Certificate Generation**: node-forge (CSR + key pair generation)
 - **OpenXPKI Communication**: axios (HTTPS RPC calls)
 - **Authentication**: express-session + connect-mongo
+- **Request Parsing**: body-parser
 
 ## Prerequisites
 
 - Node.js (v18+)
 - Docker Desktop (for OpenXPKI)
-- MongoDB Atlas account (free tier)
 - Git
 
 ## OpenXPKI Installation (Docker)
@@ -62,6 +62,8 @@ openssl rand -hex 32
 
 ### 4. Start OpenXPKI
 
+On Windows: comment out the timezone volume mounts in `docker-compose.yml` (`/etc/timezone` and `/etc/localtime` lines).
+
 ```bash
 docker compose up -d web
 ```
@@ -72,33 +74,36 @@ docker compose up -d web
 docker compose exec -u pkiadm server bash -c "sed 's/\r$//' /etc/openxpki/contrib/sampleconfig.sh | bash"
 ```
 
-### 6. Verify
+### 6. Configure for auto-issuance
+
+```bash
+docker exec -it OpenXPKI_Server bash
+sed -i 's/approval_points: 1/approval_points: 0/' /etc/openxpki/config.d/realm.tpl/rpc/generic.yaml
+sed -i 's/allow_anon_enroll: 0/allow_anon_enroll: 1/' /etc/openxpki/config.d/realm.tpl/rpc/generic.yaml
+sed -i 's/max_active_certs: 1/max_active_certs: 0/' /etc/openxpki/config.d/realm.tpl/rpc/generic.yaml
+openxpkictl reload server
+exit
+```
+
+Also set all `eligible` values to `1` in the same file to bypass connector checks.
+
+### 7. Verify
 
 Open https://localhost:8443/webui/index/ and login as `raop` / `openxpki`.
 
 ## Application Setup
 
-### 1. Install dependencies
+### 1. Clone and install
 
 ```bash
+git clone https://github.com/dhruvrajsinh9/openxpki-cert-manager.git
 cd openxpki-cert-manager
 npm install
 ```
 
-### 2. Environment variables
+### 2. Seed database with test users
 
-Create a `.env` file in the project root:
-
-```env
-PORT=3000
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/certmanager?retryWrites=true&w=majority
-SESSION_SECRET=<random-secret-string>
-OPENXPKI_URL=https://localhost:8443
-```
-
-Replace `<username>`, `<password>`, and `<cluster>` with your MongoDB Atlas credentials.
-
-### 3. Seed database with test users
+The `.env` file is included with a pre-configured MongoDB Atlas connection string. No additional database setup is required.
 
 ```bash
 node seed.js
@@ -111,7 +116,7 @@ This creates two predefined users:
 | john | requester123 | Requester |
 | selina | approver123 | Approver |
 
-### 4. Run the application
+### 3. Run the application
 
 ```bash
 node server.js
@@ -119,12 +124,23 @@ node server.js
 
 Open http://localhost:3000 in your browser.
 
+## Environment Variables
+
+The `.env` file is included in the repository with a pre-configured MongoDB Atlas connection string. No additional database setup is required.
+
+| Variable | Description |
+|----------|-------------|
+| PORT | Server port (default: 3000) |
+| MONGODB_URI | MongoDB Atlas connection string (pre-configured) |
+| SESSION_SECRET | Secret for session encryption |
+| OPENXPKI_URL | OpenXPKI server URL (default: https://localhost:8443) |
+
 ## Workflow Demonstration
 
 ### Step 1: Requester submits a certificate request
 1. Login as `john` / `requester123`
 2. Click "Request Certificate"
-3. Fill in: CN=`test.example.com`, O=`Test Company`, C=`DE`, Email=`john@test.com`
+3. Fill in: CN=`test.openxpki.test`, O=`Test Company`, C=`DE`, Email=`john@test.com`
 4. Submit the request
 5. View request in "My Certificates" with PENDING status
 6. Logout
@@ -143,8 +159,10 @@ Open http://localhost:3000 in your browser.
 4. Verify the certificate:
 
 ```bash
-openssl x509 -in test.example.com.pem -text -noout
+openssl x509 -in cert.pem -text -noout
 ```
+
+The Issuer field confirms: `CN=OpenXPKI Issuing DUMMY CA 20260320`
 
 ## API Endpoints
 
@@ -159,16 +177,14 @@ openssl x509 -in test.example.com.pem -text -noout
 | POST | /approve/:requestId | Approve a request | Approver |
 | POST | /reject/:requestId | Reject a request | Approver |
 | GET | /certificates | List user's certificates | Requester |
-| GET | /certificates/:id | View certificate details | Requester |
-| GET | /certificates/:id/download | Download certificate PEM | Requester |
-| GET | /certificates/:id/download-key | Download private key | Requester |
+| GET | /certificates/:id/download | Download certificate | Requester |
 | POST | /logout | Logout | Authenticated |
 
 ## Project Structure
 
 ```
 openxpki-cert-manager/
-├── .env                        # Environment variables
+├── .env                        # Environment variables (pre-configured)
 ├── package.json                # Dependencies
 ├── server.js                   # Express entry point
 ├── seed.js                     # Database seeder
@@ -187,19 +203,8 @@ openxpki-cert-manager/
 ├── services/
 │   ├── csrService.js           # CSR generation (node-forge)
 │   └── openxpkiService.js      # OpenXPKI RPC integration
-├── views/
-│   ├── header.ejs              # Shared navigation
-│   ├── footer.ejs              # Shared footer
-│   ├── login.ejs               # Login page
-│   ├── dashboard.ejs           # Role-specific dashboard
-│   ├── requestForm.ejs         # Certificate request form
-│   ├── certificates.ejs        # Requester's certificate list
-│   ├── certDetail.ejs          # Certificate details
-│   ├── pending.ejs             # Approver's pending list
-│   └── pendingDetail.ejs       # Pending request details
-└── public/
-    └── css/
-        └── style.css           # Application styles
+├── views/                      # EJS templates (9 files)
+└── public/css/style.css        # Application styles
 ```
 
 ## Security Notes

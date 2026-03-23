@@ -1,5 +1,3 @@
-// services/openxpkiService.js
-// Handles all communication with OpenXPKI RPC API
 // RPC endpoint: /rpc/generic/RequestCertificate
 // Workflow: certificate_enroll
 
@@ -13,15 +11,7 @@ const api = axios.create({
   timeout: 30000
 });
 
-/**
- * Submit a CSR to OpenXPKI and get a signed certificate back
- * Called when the APPROVER clicks "Approve" (not when requester submits)
- * 
- * OpenXPKI RPC format:
- *   POST /rpc/generic/RequestCertificate
- *   Body: { pkcs10: "<CSR PEM>", comment: "..." }
- *   Response: { result: { cert_identifier, certificate, chain, transaction_id } }
- */
+
 async function requestCertificate(csrPem, commonName) {
   try {
     // Submit CSR to OpenXPKI RPC endpoint
@@ -54,7 +44,7 @@ async function requestCertificate(csrPem, commonName) {
       }
     }
 
-    // If we got a transaction_id but no certificate yet, try pickup
+    // If we got a transaction_id but no certificate
     if (!certificatePem && transactionId) {
       console.log('Certificate not immediately available, trying pickup...');
       const pickupResult = await pickupCertificate(csrPem, transactionId);
@@ -77,9 +67,9 @@ async function requestCertificate(csrPem, commonName) {
   }
 }
 
-/**
- * Pickup/check a pending certificate using the check_enrollment workflow
- */
+
+//Pickup/check a pending certificate using the check_enrollment workflow
+
 async function pickupCertificate(csrPem, transactionId) {
   try {
     const response = await api.post('/rpc/generic/RequestCertificate', {
@@ -97,9 +87,8 @@ async function pickupCertificate(csrPem, transactionId) {
   }
 }
 
-/**
- * Search for a certificate by common name using the public endpoint
- */
+// Search for a certificate by common name using the public endpoint
+
 async function searchCertificate(commonName) {
   try {
     const response = await api.post('/rpc/public/SearchCertificate', {
@@ -116,10 +105,8 @@ async function searchCertificate(commonName) {
   }
 }
 
-/**
- * Fallback: generate a self-signed certificate when OpenXPKI RPC is unavailable
- * This ensures the demo workflow completes even if RPC isn't responding
- */
+//Fallback: generate a self-signed certificate when OpenXPKI RPC is unavailable.This is the demo workflow  if RPC isn't responding
+
 function generateFallbackCertificate(csrPem, privateKeyPem) {
   const forge = require('node-forge');
 

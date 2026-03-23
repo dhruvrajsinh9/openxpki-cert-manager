@@ -1,4 +1,3 @@
-// config/db.js
 // Connects to MongoDB Atlas using the URI from .env
 
 const mongoose = require('mongoose');

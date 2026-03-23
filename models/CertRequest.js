@@ -1,4 +1,3 @@
-// models/CertRequest.js
 // Stores certificate requests with status tracking and all related data
 
 const mongoose = require('mongoose');

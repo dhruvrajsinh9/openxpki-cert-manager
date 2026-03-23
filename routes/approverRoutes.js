@@ -1,4 +1,3 @@
-// routes/approverRoutes.js
 // Routes for the Approver role: view pending requests, approve, reject
 // On approval: submits the stored CSR to OpenXPKI RPC to get a signed certificate
 

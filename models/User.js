@@ -1,4 +1,3 @@
-// models/User.js
 // Defines the User schema — stores login credentials and role
 
 const mongoose = require('mongoose');

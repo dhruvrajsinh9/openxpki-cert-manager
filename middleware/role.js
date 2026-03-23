@@ -1,4 +1,3 @@
-// middleware/role.js
 // Restricts access to routes based on user role (requester or approver)
 
 function requireRole(role) {

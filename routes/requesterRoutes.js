@@ -1,4 +1,3 @@
-// routes/requesterRoutes.js
 // Routes for the Requester role: request certs, view status, download
 
 const express = require('express');
