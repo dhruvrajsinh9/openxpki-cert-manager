@@ -1,3 +1,4 @@
+// models/CertRequest.js
 // Stores certificate requests with status tracking and all related data
 
 const mongoose = require('mongoose');
@@ -50,6 +51,10 @@ const certRequestSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  errorMessage: {
+    type: String,
+    default: null
+  },
   workflowId: {
     type: String,
     default: null
@@ -69,6 +74,11 @@ const certRequestSchema = new mongoose.Schema({
   privateKeyPem: {
     type: String,
     default: null
+  },
+  keyGeneratedBy: {
+    type: String,
+    enum: ['server', 'client'],
+    default: 'server'
   }
 }, {
   timestamps: true

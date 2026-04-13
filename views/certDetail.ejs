@@ -28,6 +28,16 @@
       <th>Status</th>
       <td><span class="status status-<%= certReq.status.toLowerCase() %>"><%= certReq.status %></span></td>
     </tr>
+    <% if (certReq.status === 'FAILED' && certReq.errorMessage) { %>
+      <tr>
+        <th>Error</th>
+        <td style="color: #e53e3e;"><%= certReq.errorMessage %></td>
+      </tr>
+    <% } %>
+    <tr>
+      <th>Key Generation</th>
+      <td><%= certReq.keyGeneratedBy === 'client' ? 'Client-side (CSR uploaded — private key on your machine)' : 'Server-side (automatic)' %></td>
+    </tr>
     <tr>
       <th>Requested At</th>
       <td><%= certReq.createdAt.toLocaleString() %></td>
@@ -55,7 +65,11 @@
   <div style="margin-top: 1.5rem;">
     <% if (certReq.status === 'ISSUED' && certReq.certificatePem) { %>
       <a href="/certificates/<%= certReq._id %>/download" class="btn btn-success">Download Certificate (PEM)</a>
-      <a href="/certificates/<%= certReq._id %>/download-key" class="btn" style="background: #805ad5; color: white;">Download Private Key</a>
+      <% if (certReq.privateKeyPem) { %>
+        <a href="/certificates/<%= certReq._id %>/download-key" class="btn" style="background: #805ad5; color: white;">Download Private Key</a>
+      <% } else { %>
+        <span style="color: #666; font-size: 0.875rem; margin-left: 0.5rem;">Private key was generated on your machine</span>
+      <% } %>
     <% } %>
     <a href="/certificates" class="btn" style="margin-left: 0.5rem;">Back to List</a>
   </div>

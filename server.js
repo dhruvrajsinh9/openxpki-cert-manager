@@ -61,8 +61,8 @@ app.use('/', authRoutes);
 app.use('/', requesterRoutes);
 app.use('/', approverRoutes);
 
-// Start the server
+// Start the server — bind to 0.0.0.0 for external access
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${PORT}`);
 });

@@ -37,7 +37,19 @@
     </tr>
     <tr>
       <th>Status</th>
-      <td><span class="status status-<%= certReq.status.toLowerCase() %>"><%= certReq.status %></span></td>
+      <td>
+        <span class="status status-<%= certReq.status.toLowerCase() %>"><%= certReq.status %></span>
+      </td>
+    </tr>
+    <% if (certReq.status === 'FAILED' && certReq.errorMessage) { %>
+      <tr>
+        <th>Error</th>
+        <td style="color: #e53e3e;"><%= certReq.errorMessage %></td>
+      </tr>
+    <% } %>
+    <tr>
+      <th>Key Generation</th>
+      <td><%= certReq.keyGeneratedBy === 'client' ? 'Client-side (CSR uploaded)' : 'Server-side (automatic)' %></td>
     </tr>
     <tr>
       <th>Requested At</th>
@@ -51,10 +63,12 @@
     <% } %>
   </table>
 
-  <% if (certReq.status === 'PENDING') { %>
+  <% if (certReq.status === 'PENDING' || certReq.status === 'FAILED') { %>
     <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem;">
       <form action="/approve/<%= certReq._id %>" method="POST">
-        <button type="submit" class="btn btn-success">Approve</button>
+        <button type="submit" class="btn btn-success">
+          <%= certReq.status === 'FAILED' ? 'Retry' : 'Approve' %>
+        </button>
       </form>
       <form action="/reject/<%= certReq._id %>" method="POST" onsubmit="return handleReject(this);">
         <input type="hidden" name="reason" value="">

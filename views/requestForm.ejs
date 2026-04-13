@@ -10,10 +10,36 @@
 <% } %>
 
 <div class="form-container">
-  <form action="/request" method="POST">
+  <form action="/request" method="POST" enctype="multipart/form-data">
+
+    <!-- CSR Mode Selection -->
+    <div class="form-group">
+      <label>Key Generation Method</label>
+      <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+        <label style="display: flex; align-items: center; gap: 0.25rem; font-weight: normal; cursor: pointer;">
+          <input type="radio" name="csrMode" value="server" checked onchange="toggleCSRMode()">
+          Server-side (automatic)
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.25rem; font-weight: normal; cursor: pointer;">
+          <input type="radio" name="csrMode" value="upload" onchange="toggleCSRMode()">
+          Upload my own CSR
+        </label>
+      </div>
+      <small style="color: #666; display: block; margin-top: 0.25rem;" id="csrHint">
+        The server will generate a key pair and CSR for you.
+      </small>
+    </div>
+
+    <!-- CSR File Upload (hidden by default) -->
+    <div class="form-group" id="csrUploadGroup" style="display: none;">
+      <label for="csrFile">CSR File (.pem or .csr)</label>
+      <input type="file" id="csrFile" name="csrFile" accept=".pem,.csr,.txt">
+      <small style="color: #666;">Upload a PEM-encoded Certificate Signing Request. Your private key stays on your machine.</small>
+    </div>
+
     <div class="form-group">
       <label for="commonName">Common Name (CN) *</label>
-      <input type="text" id="commonName" name="commonName" placeholder="e.g., test.example.com" required>
+      <input type="text" id="commonName" name="commonName" placeholder="e.g., test.openxpki.test" required>
     </div>
 
     <div class="form-group">
@@ -49,5 +75,21 @@
     <a href="/dashboard" class="btn" style="margin-left: 0.5rem;">Cancel</a>
   </form>
 </div>
+
+<script>
+function toggleCSRMode() {
+  var mode = document.querySelector('input[name="csrMode"]:checked').value;
+  var uploadGroup = document.getElementById('csrUploadGroup');
+  var hint = document.getElementById('csrHint');
+
+  if (mode === 'upload') {
+    uploadGroup.style.display = 'block';
+    hint.textContent = 'Upload your own CSR file. The private key never leaves your machine.';
+  } else {
+    uploadGroup.style.display = 'none';
+    hint.textContent = 'The server will generate a key pair and CSR for you.';
+  }
+}
+</script>
 
 <%- include('footer') %>

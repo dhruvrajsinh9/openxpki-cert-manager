@@ -1,20 +1,18 @@
+// routes/approverRoutes.js
 // Routes for the Approver role: view pending requests, approve, reject
-// On approval: submits the stored CSR to OpenXPKI RPC to get a signed certificate
+// On failure: sets status to FAILED with visible error, allows retry
 
 const express = require('express');
 const router = express.Router();
 const { isAuthenticated } = require('../middleware/auth');
 const { requireRole } = require('../middleware/role');
 const CertRequest = require('../models/CertRequest');
-const {
-  requestCertificate,
-  generateFallbackCertificate
-} = require('../services/openxpkiService');
+const { requestCertificate } = require('../services/openxpkiService');
 
-// GET /pending — List all pending certificate requests
+// GET /pending — List pending and failed certificate requests
 router.get('/pending', isAuthenticated, requireRole('approver'), async (req, res) => {
   try {
-    const requests = await CertRequest.find({ status: 'PENDING' })
+    const requests = await CertRequest.find({ status: { $in: ['PENDING', 'FAILED'] } })
       .sort({ createdAt: -1 });
     res.render('pending', { requests, error: null, success: null });
   } catch (err) {
@@ -35,55 +33,60 @@ router.get('/pending/:id', isAuthenticated, requireRole('approver'), async (req,
   }
 });
 
-// POST /approve/:requestId — Approve a certificate request
-// This is where we submit the CSR to OpenXPKI and get the signed certificate
+// POST /approve/:requestId — Approve and submit CSR to OpenXPKI
 router.post('/approve/:requestId', isAuthenticated, requireRole('approver'), async (req, res) => {
   try {
     const certReq = await CertRequest.findById(req.params.requestId);
     if (!certReq) return res.status(404).send('Request not found.');
-    if (certReq.status !== 'PENDING') return res.status(400).send('This request has already been processed.');
+    if (certReq.status !== 'PENDING' && certReq.status !== 'FAILED') {
+      return res.status(400).send('This request has already been processed.');
+    }
 
-    let certificatePem = null;
-
-    // Step 1: Submit CSR to OpenXPKI RPC
+    // Submit CSR to OpenXPKI — NO fallback self-signed certificate
+    let result = { success: false, error: 'No CSR available' };
     if (certReq.csrPem) {
       console.log(`Submitting CSR to OpenXPKI for: ${certReq.commonName}`);
-      const result = await requestCertificate(certReq.csrPem, certReq.commonName);
-
-      if (result.success && result.certificatePem) {
-        // OpenXPKI returned a signed certificate
-        certificatePem = result.certificatePem;
-        certReq.certIdentifier = result.certIdentifier;
-        certReq.workflowId = result.transactionId;
-        console.log(`OpenXPKI issued certificate: ${result.certIdentifier}`);
-      } else {
-        console.log('OpenXPKI did not return a certificate, using fallback');
-      }
+      result = await requestCertificate(certReq.csrPem, certReq.commonName);
     }
 
-    // Step 2: Fallback — generate self-signed cert if OpenXPKI failed
-    if (!certificatePem && certReq.csrPem && certReq.privateKeyPem) {
-      console.log('Using fallback self-signed certificate generation');
-      certificatePem = generateFallbackCertificate(certReq.csrPem, certReq.privateKeyPem);
+    if (result.success && result.certificatePem) {
+      // SUCCESS — certificate issued by OpenXPKI
+      certReq.status = 'ISSUED';
+      certReq.certificatePem = result.certificatePem;
+      certReq.certIdentifier = result.certIdentifier;
+      certReq.workflowId = result.transactionId;
+      certReq.errorMessage = null;
+      console.log(`Certificate issued for: ${certReq.commonName}`);
+    } else {
+      // FAILED — OpenXPKI did not return a certificate
+      certReq.status = 'FAILED';
+      certReq.errorMessage = result.error || 'Unknown error during certificate issuance';
+      console.error(`Certificate issuance FAILED for: ${certReq.commonName} - ${result.error}`);
     }
 
-    // Step 3: Update the request in MongoDB
-    certReq.status = certificatePem ? 'ISSUED' : 'APPROVED';
     certReq.approver = req.session.userId;
     certReq.approverUsername = req.session.username;
-    certReq.certificatePem = certificatePem;
     await certReq.save();
 
-    const requests = await CertRequest.find({ status: 'PENDING' }).sort({ createdAt: -1 });
-    res.render('pending', {
-      requests,
-      error: null,
-      success: `Request for "${certReq.commonName}" has been approved${certificatePem ? ' and certificate issued.' : '.'}`
-    });
+    const requests = await CertRequest.find({ status: { $in: ['PENDING', 'FAILED'] } }).sort({ createdAt: -1 });
+
+    if (certReq.status === 'ISSUED') {
+      res.render('pending', {
+        requests,
+        error: null,
+        success: `Request for "${certReq.commonName}" approved and certificate issued successfully.`
+      });
+    } else {
+      res.render('pending', {
+        requests,
+        error: `Certificate issuance failed for "${certReq.commonName}": ${certReq.errorMessage}. Click "Retry" to try again.`,
+        success: null
+      });
+    }
   } catch (err) {
     console.error('Approve error:', err);
-    const requests = await CertRequest.find({ status: 'PENDING' }).sort({ createdAt: -1 });
-    res.render('pending', { requests, error: 'Failed to approve request.', success: null });
+    const requests = await CertRequest.find({ status: { $in: ['PENDING', 'FAILED'] } }).sort({ createdAt: -1 });
+    res.render('pending', { requests, error: 'Failed to process request.', success: null });
   }
 });
 
@@ -92,7 +95,9 @@ router.post('/reject/:requestId', isAuthenticated, requireRole('approver'), asyn
   try {
     const certReq = await CertRequest.findById(req.params.requestId);
     if (!certReq) return res.status(404).send('Request not found.');
-    if (certReq.status !== 'PENDING') return res.status(400).send('This request has already been processed.');
+    if (certReq.status !== 'PENDING' && certReq.status !== 'FAILED') {
+      return res.status(400).send('This request has already been processed.');
+    }
 
     certReq.status = 'REJECTED';
     certReq.approver = req.session.userId;
@@ -100,7 +105,7 @@ router.post('/reject/:requestId', isAuthenticated, requireRole('approver'), asyn
     certReq.rejectionReason = req.body.reason || 'No reason provided';
     await certReq.save();
 
-    const requests = await CertRequest.find({ status: 'PENDING' }).sort({ createdAt: -1 });
+    const requests = await CertRequest.find({ status: { $in: ['PENDING', 'FAILED'] } }).sort({ createdAt: -1 });
     res.render('pending', {
       requests,
       error: null,
@@ -108,7 +113,7 @@ router.post('/reject/:requestId', isAuthenticated, requireRole('approver'), asyn
     });
   } catch (err) {
     console.error('Reject error:', err);
-    const requests = await CertRequest.find({ status: 'PENDING' }).sort({ createdAt: -1 });
+    const requests = await CertRequest.find({ status: { $in: ['PENDING', 'FAILED'] } }).sort({ createdAt: -1 });
     res.render('pending', { requests, error: 'Failed to reject request.', success: null });
   }
 });
