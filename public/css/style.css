@@ -239,8 +239,14 @@ th {
 
 td {
   font-size: 0.875rem;
+  white-space: nowrap;
 }
 
+td .btn {
+  display: inline-block;
+  margin-right: 0.25rem;
+  margin-bottom: 0.25rem;
+}
 /* Status badges */
 .status {
   display: inline-block;
